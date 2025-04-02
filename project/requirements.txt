@@ -1,7 +1,7 @@
 langchain
 faiss-cpu
 pdfplumber
-PyPDF2
+pypdf
 requests
 python-dotenv
 textual
