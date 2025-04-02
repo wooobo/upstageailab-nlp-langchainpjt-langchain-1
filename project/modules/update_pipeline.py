@@ -6,13 +6,10 @@ from .embedding import chunk_text, embed_chunks
 from .vectorstore import LocalFaissStore
 
 """
-Hour 4: update_pipeline & scheduling
- - 1) last_update_time 로드/저장
- - 2) update_documents_if_needed() -> 일정시간 경과 시 자동 업데이트
- - 3) 업데이트 시, 문서 ingest + chunk + embed + FAISS store 갱신
+Hour 4 + Hour 8: update_pipeline & scheduling + 예외처리
+ - update_documents_if_needed(): ingestion 중간에 에러 발생 시 건너뛰거나 로그만 찍고 계속
 """
 
-# 기존 문서 목록 예시
 DOCUMENTS = [
     {
         "title": "휴가양식",
@@ -32,10 +29,6 @@ DOCUMENTS = [
 ]
 
 def load_last_update_time():
-    """
-    로컬 파일에서 마지막 업데이트 시간(유닉스 타임스탬프)을 로드.
-    파일이 없으면 0 반환.
-    """
     filename = ".last_update_time"
     if os.path.exists(filename):
         with open(filename, 'r') as f:
@@ -47,52 +40,47 @@ def load_last_update_time():
     return 0.0
 
 def save_last_update_time(timestamp: float):
-    """
-    로컬 파일에 마지막 업데이트 시간(유닉스 타임스탬프) 저장
-    """
     filename = ".last_update_time"
     with open(filename, 'w') as f:
         f.write(str(timestamp))
 
 def update_documents_if_needed(store=None):
-    """
-    - 현재 시각과 .env의 UPDATE_INTERVAL_HOURS를 비교하여,
-      시간이 지났으면 인제스트+임베딩+FAISS 갱신
-    - 갱신 후 last_update_time 갱신
-    - :param store: (Optional) 이미 생성된 LocalFaissStore 인스턴스.
-                    없으면 새로 생성해서 반환.
-    - :return: (store, updated:boolean)
-    """
     interval_hours = float(os.getenv("UPDATE_INTERVAL_HOURS", "24"))
     last_update = load_last_update_time()
     now = time.time()
-
     elapsed = now - last_update
     need_update = (elapsed >= interval_hours * 3600)
 
     if not need_update:
-        # 업데이트 불필요
         return store, False
 
     # 업데이트 수행
-    # 1) 문서 ingestion
     all_contents = ingest_all_documents()
-    # 2) chunk+embed -> store에 저장
-    if store is None:
-        store = LocalFaissStore(dimension=768)  # 차원 768로 가정
 
-    # 전체 문서 chunk+embed
+    if store is None:
+        store = LocalFaissStore(dimension=768)
+
     all_embeddings = []
     all_metadatas = []
+
     for doc in all_contents:
-        text = doc.get("text", "")
+        text = doc.get("text", None)
+        if not text:
+            # 문서 로딩 실패 or 빈 텍스트인 경우
+            print(f"[Warning] Skipping doc: {doc.get('title')} (No text)")
+            continue
+
         doc_title = doc.get("title", "Untitled")
         doc_url = doc.get("url", "")
 
-        chunks = chunk_text(text, chunk_size=512, overlap=0)
-        embeddings = embed_chunks(chunks,
-                                  api_key=os.getenv("OPENAI_API_KEY", "DUMMY"),
-                                  model=os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002"))
+        try:
+            chunks = chunk_text(text, chunk_size=512, overlap=0)
+            embeddings = embed_chunks(chunks,
+                                      api_key=os.getenv("OPENAI_API_KEY", "DUMMY"),
+                                      model=os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002"))
+        except Exception as e:
+            print(f"[Error] chunk/embed failed on doc={doc_title}, {e}")
+            continue
 
         for i, emb in enumerate(embeddings):
             meta = {
@@ -107,17 +95,12 @@ def update_documents_if_needed(store=None):
     store.add_documents(all_embeddings, all_metadatas)
     print(f"[update_pipeline] Updated FAISS store with {len(all_embeddings)} new embeddings.")
 
-    # 마지막 업데이트 시간 갱신
     save_last_update_time(now)
     print(f"[update_pipeline] Last update time set to {now}.")
 
     return store, True
 
 def ingest_all_documents():
-    """
-    (Hour 2 + Hour 3에서 사용하던 함수)
-    문서를 순회하며 텍스트(및 이미지 링크)를 수집
-    """
     all_contents = []
     for doc in DOCUMENTS:
         doc_type = doc.get("type")
@@ -126,7 +109,19 @@ def ingest_all_documents():
 
         if "google" in doc_type:
             pdf_path = convert_gdoc_to_pdf(doc_url)
+            if pdf_path is None:
+                # 변환 실패
+                print(f"[Warning] convert_gdoc_to_pdf failed for {doc_title}")
+                continue
+
             extracted = extract_text_from_pdf(pdf_path)
+            if extracted is None:
+                print(f"[Warning] extract_text_from_pdf failed for {doc_title}")
+                continue
+
+            # (OCR optional)
+            # ocr_result = run_ocr_on_pdf(pdf_path)
+
             all_contents.append({
                 "title": doc_title,
                 "type": doc_type,
@@ -136,6 +131,9 @@ def ingest_all_documents():
 
         elif doc_type == "notion":
             text_content, image_links = fetch_notion_content(doc_url)
+            if text_content is None:
+                print(f"[Warning] fetch_notion_content failed for {doc_title}")
+                continue
             all_contents.append({
                 "title": doc_title,
                 "type": doc_type,
@@ -144,6 +142,7 @@ def ingest_all_documents():
                 "images": image_links
             })
         else:
-            pass
+            print(f"[Warning] Unknown doc type: {doc_type}")
+            continue
 
     return all_contents
