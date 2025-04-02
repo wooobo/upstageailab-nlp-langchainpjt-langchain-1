@@ -2,8 +2,13 @@ Hour 4: 업데이트 파이프라인 & 스케줄러 구현
 Hour 5: RAG 파이프라인(GPT 호출) 구현
 Hour 6: Textual TUI 기본 구성
 Hour 7: 통합 테스트 & 디버깅
+Hour 8: 예외처리 및 코드 정리
 Hour 9: 설정(.env) 파라미터 확장 & 간단 문서화
 Hour 10: 최종 점검 & 데모
+
+
+pip install textual
+pip install python-dotenv
 
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/5BS4k7bR)
 # **LangChain 프로젝트** *(예시)*
@@ -83,7 +88,7 @@ LangChain 기반 문서 QA 시스템의 구축 및 운영을 위한 파이프라
 ```bash
 # 1. 프로젝트 클론
 git clone https://github.com/your-org/langchain-qa-project.git
-cd langchain-qa-project
+cd langchain-qa-src
 
 # 2. 가상환경 설정 및 패키지 설치
 python -m venv venv
