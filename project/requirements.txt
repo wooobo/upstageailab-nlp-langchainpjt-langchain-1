@@ -1,0 +1,7 @@
+langchain
+faiss-cpu
+pdfplumber
+PyPDF2
+requests
+python-dotenv
+textual
