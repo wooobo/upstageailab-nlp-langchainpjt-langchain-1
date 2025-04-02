@@ -5,32 +5,30 @@ from dotenv import load_dotenv
 
 from modules.vectorstore import LocalFaissStore
 from modules.update_pipeline import update_documents_if_needed
+from modules.rag import answer_query
 
 def main():
+    # .env 로드
     load_dotenv(dotenv_path='config.env')
 
-    # 1) 스토어 생성 (처음에는 빈 상태)
+    # 1) 스토어 생성
     store = LocalFaissStore(dimension=768)
 
-    # 2) update_documents_if_needed -> .env의 UPDATE_INTERVAL_HOURS 지난 경우 업데이트
+    # 2) 문서 자동 업데이트(ingestion + embedding) 확인
     store, updated = update_documents_if_needed(store=store)
-
     if updated:
-        print("[Main] Documents were updated. Now FAISS store is fresh.")
+        print("[Main] Documents were updated & embedded.")
     else:
-        print("[Main] No update needed. FAISS store is unchanged.")
+        print("[Main] No update needed.")
 
-    # 이후 RAG 질의응답 로직을 연결하거나,
-    # 테스트 검색을 시도하는 코드를 작성 가능.
-
-    # 예: 간단히 검색 테스트 (원하는 경우 주석 해제)
-    # query = "휴가 신청 방법"
-    # from modules.embedding import embed_chunks
-    # query_emb = embed_chunks([query])[0]
-    # results = store.search(query_emb, top_k=3)
-    # print("[Search Results]")
-    # for dist, meta in results:
-    #     print(f" - dist={dist:.3f}, title={meta.get('title')}, snippet={meta.get('text_snippet')}")
+    # 3) RAG 질의응답 테스트
+    test_query = "휴가 신청 프로세스 알려줘"
+    rag_result = answer_query(test_query, store=store, history=None, top_k=3)
+    print("\n[RAG Test] Query:", test_query)
+    print("Answer:", rag_result["answer"])
+    print("Sources:")
+    for src in rag_result["sources"]:
+        print(f" - Title={src['title']}, URL={src['url']}, distance={src['distance']:.2f}")
 
 if __name__ == "__main__":
     main()
