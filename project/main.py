@@ -3,65 +3,34 @@
 import os
 from dotenv import load_dotenv
 
-from modules.update_pipeline import ingest_all_documents
-from modules.embedding import chunk_text, embed_chunks
 from modules.vectorstore import LocalFaissStore
+from modules.update_pipeline import update_documents_if_needed
 
 def main():
-    # 1) .env 로딩
     load_dotenv(dotenv_path='config.env')
 
-    # 2) 문서 인제스션 (스텁)
-    contents = ingest_all_documents()
-    print("[Ingestion] Document count:", len(contents))
-
-    # 3) Chunking + Embedding + FAISS 저장
+    # 1) 스토어 생성 (처음에는 빈 상태)
     store = LocalFaissStore(dimension=768)
 
-    all_embeddings = []
-    all_metadatas = []
-    chunk_size = 512
-    overlap = 0
+    # 2) update_documents_if_needed -> .env의 UPDATE_INTERVAL_HOURS 지난 경우 업데이트
+    store, updated = update_documents_if_needed(store=store)
 
-    for doc in contents:
-        text = doc.get("text", "")
-        doc_title = doc.get("title", "Untitled")
-        doc_url = doc.get("url", "")
+    if updated:
+        print("[Main] Documents were updated. Now FAISS store is fresh.")
+    else:
+        print("[Main] No update needed. FAISS store is unchanged.")
 
-        # 3-1) Chunking
-        chunks = chunk_text(text, chunk_size=chunk_size, overlap=overlap)
-        # 3-2) Embedding
-        embeddings = embed_chunks(chunks,
-                                  api_key=os.getenv("OPENAI_API_KEY", "DUMMY"),
-                                  model=os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002"))
+    # 이후 RAG 질의응답 로직을 연결하거나,
+    # 테스트 검색을 시도하는 코드를 작성 가능.
 
-        # 3-3) Metadata
-        # 각 chunk마다 별도 메타데이터
-        for i, emb in enumerate(embeddings):
-            meta = {
-                "title": doc_title,
-                "url": doc_url,
-                "chunk_index": i,
-                "text_snippet": chunks[i][:50]  # 미리보기
-            }
-            all_embeddings.append(emb)
-            all_metadatas.append(meta)
-
-    # 3-4) 저장
-    store.add_documents(all_embeddings, all_metadatas)
-    print(f"[FAISS] Stored {len(all_embeddings)} chunk embeddings.")
-
-    # 4) 간단 검색 테스트
-    # 쿼리도 임베딩 stubs로 만듦
-    query = "휴가 양식 관련 내용"
-    query_embedding = embed_chunks([query])[0]  # 한 개 문장만
-    results = store.search(query_embedding, top_k=3)
-
-    print("[Search Test] Query:", query)
-    for dist, meta in results:
-        print(f" - Distance={dist:.2f}, Title={meta.get('title')}, Snippet={meta.get('text_snippet')}")
-
-    print("Chunking & Embedding Test Complete.")
+    # 예: 간단히 검색 테스트 (원하는 경우 주석 해제)
+    # query = "휴가 신청 방법"
+    # from modules.embedding import embed_chunks
+    # query_emb = embed_chunks([query])[0]
+    # results = store.search(query_emb, top_k=3)
+    # print("[Search Results]")
+    # for dist, meta in results:
+    #     print(f" - dist={dist:.3f}, title={meta.get('title')}, snippet={meta.get('text_snippet')}")
 
 if __name__ == "__main__":
     main()

@@ -1,3 +1,11 @@
+Hour 4: 업데이트 파이프라인 & 스케줄러 구현
+Hour 5: RAG 파이프라인(GPT 호출) 구현
+Hour 6: Textual TUI 기본 구성
+Hour 7: 통합 테스트 & 디버깅
+Hour 9: 설정(.env) 파라미터 확장 & 간단 문서화
+Hour 10: 최종 점검 & 데모
+
+
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/5BS4k7bR)
 # **LangChain 프로젝트** *(예시)*
 
