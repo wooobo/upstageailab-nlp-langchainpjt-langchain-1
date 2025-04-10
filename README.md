@@ -1,6 +1,5 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/5BS4k7bR)
-# **LangChain 프로젝트** *(예시)*
-
+# **LangChain 프로젝트**
 LangChain을 활용한 **부트캠프 RAG봇** 구축 프로젝트입니다.  
 본 프로젝트는 부트캠프 교육 과정에서 제공되는 다양한 문서(강의 시간표, 강의 리스트, 법령, 슬랙 공지 등)를 기반으로, 사용자 질문에 자동으로 응답할 수 있는 Q&A 시스템을 구현하는 데 목적이 있습니다.
 
@@ -16,7 +15,7 @@ LangChain을 활용한 **부트캠프 RAG봇** 구축 프로젝트입니다.
 
 | 이름      | 역할             | GitHub                | 담당 기능                                         |
 |-----------|------------------|------------------------|--------------------------------------------------|
-| **강태화** |  팀장 | [GitHub 링크](#)| 아키텍쳐 구조 설게, 휴가/출석대장 작성법과 과정시간표 데이터 수집 및 임베딩, Langchain 통합 |
+| **강태화** |  팀장 | [GitHub 링크](https://github.com/wooobo)| 아키텍쳐 구조 설게, 휴가/출석대장 작성법과 과정시간표 데이터 수집 및 임베딩, Langchain 통합 |
 | **정혜린** |  팀원 | [https://github.com/jhyerin31](#) | 온라인 강의 데이터 수집 및 임베딩, LCEL 구현  |
 | **정인복** |  팀원 | [GitHub 링크](#)| 내일배움카드 관련 법령 데이터 수집 및 임베딩, 프롬프트 출력 요약 |
 | **진우재** |  팀원 | [GitHub 링크](#)|            |
